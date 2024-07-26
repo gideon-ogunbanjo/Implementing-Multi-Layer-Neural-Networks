@@ -42,7 +42,7 @@ def main():
     start_time = time.time()
 
     trainset = torchvision.datasets.CIFAR100(root='./data', train=True, download=True, transform=transform)
-    trainloader = torch.utils.data.DataLoader(trainset, batch_size=100, shuffle=True, num_workers=2)
+    trainloader = torch.utils.data.DataLoader(trainset, batch_size=100, shuffle=True, num_workers=2, pin_memory=True)
 
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
     net = Net().to(device)
@@ -51,9 +51,10 @@ def main():
     optimizer = torch.optim.Adam(net.parameters(), lr=0.001)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=5, factor=0.1)
 
-    for epoch in range(160):
+    total_epochs = 100
+
+    for epoch in range(total_epochs):
         running_loss = 0.0
-        epoch_loss = 0.0
         for i, data in enumerate(trainloader, 0):
             inputs, labels = data
             inputs, labels = inputs.to(device), labels.to(device)
@@ -66,17 +67,18 @@ def main():
 
             running_loss += loss.item()
             if i % 200 == 199:
-                print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss / 200:.3f}')
+                avg_loss = running_loss / 200
+                print(f'[{epoch + 1}, {i + 1:5d}] loss: {avg_loss:.3f}')
                 running_loss = 0.0
-        
-        epoch_loss = running_loss / len(trainloader)
-        print(f'Epoch {epoch + 1} completed. Average loss: {epoch_loss:.3f}')
 
-        scheduler.step(epoch_loss)
+        epoch_loss = running_loss / len(trainloader)
+        print(f'Epoch {epoch + 1} of {total_epochs} completed. Average loss: {epoch_loss:.3f}')
 
         if torch.isnan(loss) or torch.isinf(loss):
             print(f"NaN or Inf detected in loss at epoch {epoch}, batch {i}")
             return
+        
+        scheduler.step(epoch_loss)
 
     end_time = time.time()
     elapsed_time = end_time - start_time
@@ -84,3 +86,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

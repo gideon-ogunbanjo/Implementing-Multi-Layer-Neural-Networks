@@ -48,4 +48,8 @@ This implementation aims to reproduce the results from the original paper, which
  ## Creator
  [Gideon Ogunbanjo](https://gideonogunbanjo.netlify.app)
 
+    transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+    ])
 
